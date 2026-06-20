@@ -1,18 +1,19 @@
 import { usePlantaStore } from './store/plantaStore';
+import { useEditorStore } from './store/editorStore';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
-import { DashboardView } from './components/dashboard/DashboardView';
-import { MapView } from './components/map/MapView';
 import { AlertsDrawer } from './components/drawers/AlertsDrawer';
 import { AnalysisDrawer } from './components/drawers/AnalysisDrawer';
 import { OccurrenceModal } from './components/modals/OccurrenceModal';
 import { TooltipFloating } from './components/TooltipFloating';
+import { OperationMode } from './modes/OperationMode';
+import { EditorMode } from './modes/EditorMode';
 
 export default function App() {
   const ready = usePlantaStore((s) => s.ready);
-  const mainView = usePlantaStore((s) => s.mainView);
   const overlayOpen = usePlantaStore((s) => s.overlayOpen);
   const closeAllOverlays = usePlantaStore((s) => s.closeAllOverlays);
+  const appMode = useEditorStore((s) => s.appMode);
 
   if (!ready) {
     return (
@@ -31,15 +32,7 @@ export default function App() {
       <main className="flex-1 ml-72 flex flex-col h-screen overflow-hidden app-main">
         <TopBar />
         <div className="flex flex-1 overflow-hidden relative">
-          <section
-            className={`flex-1 overflow-y-auto p-6 bg-surface-container-lowest view-dashboard ${mainView === 'dashboard' ? 'active' : ''}`}
-            id="view-dashboard"
-          >
-            <DashboardView />
-          </section>
-          <div className={`flex flex-1 overflow-hidden view-mapa ${mainView !== 'mapa' ? 'hidden-view' : ''}`} id="view-mapa">
-            <MapView />
-          </div>
+          {appMode === 'operate' ? <OperationMode /> : <EditorMode />}
         </div>
       </main>
       <div

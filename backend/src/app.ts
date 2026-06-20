@@ -6,6 +6,7 @@ import { healthRoutes } from './routes/health.routes.js';
 import { plantasRoutes } from './routes/plantas.routes.js';
 import { alertasRoutes } from './routes/alertas.routes.js';
 import { ocorrenciasRoutes } from './routes/ocorrencias.routes.js';
+import { layoutRoutes } from './routes/layout.routes.js';
 import { registerTelemetryGateway } from './ws/telemetry.gateway.js';
 
 export async function buildApp(env: Env) {
@@ -23,6 +24,7 @@ export async function buildApp(env: Env) {
     await api.register(plantasRoutes);
     await api.register(alertasRoutes);
     await api.register(ocorrenciasRoutes);
+    await api.register(layoutRoutes);
   }, { prefix: '/api' });
 
   registerTelemetryGateway(app);

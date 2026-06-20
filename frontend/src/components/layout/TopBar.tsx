@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { formatSimTime, getTurnoLabel } from '../../utils/sectorStatus';
 import { usePlantaStore } from '../../store/plantaStore';
+import { useEditorStore } from '../../store/editorStore';
 
 export function TopBar() {
   const planta = usePlantaStore((s) => s.planta)!;
@@ -13,6 +14,9 @@ export function TopBar() {
   const clearSelection = usePlantaStore((s) => s.clearSelection);
   const selectZone = usePlantaStore((s) => s.selectZone);
   const closeAllOverlays = usePlantaStore((s) => s.closeAllOverlays);
+  const appMode = useEditorStore((s) => s.appMode);
+  const dirty = useEditorStore((s) => s.dirty);
+  const setAppMode = useEditorStore((s) => s.setAppMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasAlerts = alerts.some((a) => a.severidade !== 'info');
@@ -63,6 +67,23 @@ export function TopBar() {
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center border border-outline-variant rounded overflow-hidden">
+          <button
+            type="button"
+            className={`text-[10px] px-3 py-1.5 font-bold uppercase ${appMode === 'operate' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-secondary-container/10'}`}
+            onClick={() => void setAppMode('operate')}
+          >
+            Operar
+          </button>
+          <button
+            type="button"
+            className={`text-[10px] px-3 py-1.5 font-bold uppercase flex items-center gap-1 ${appMode === 'edit' ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-secondary-container/10'}`}
+            onClick={() => void setAppMode('edit')}
+          >
+            Editar layout
+            {dirty && appMode === 'edit' && <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />}
+          </button>
+        </div>
         <div className="hidden md:flex items-center gap-1 border border-outline-variant rounded px-2 py-1">
           {([1, 2, 3] as const).map((t) => (
             <button

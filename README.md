@@ -81,11 +81,29 @@ Legado HTML (referência): `docs/legacy/html-app/index.html`
 | Front sem dados | Backend em `:3000` ou use `?mock=1` |
 | Build falha em `@sgm/shared` | `npm run build -w @sgm/shared` antes do front |
 
+## Editor de Planta
+
+Modo **Editar layout** na TopBar (atalho `V` para voltar a Operar).
+
+| Ferramenta | Atalho | Ação |
+|------------|--------|------|
+| Selecionar | `S` | Mover/redimensionar setores (8 handles) |
+| Retângulo | `R` | Desenhar novo setor (click + drag) |
+| Máquina | `M` | Adicionar máquina no setor selecionado |
+| Pan | toolbar | Arrastar o canvas |
+
+- **Salvar:** botão na toolbar ou `Ctrl+S` — persiste via API REST; `layout3d` é derivado no backend.
+- **Undo/redo:** `Ctrl+Z` / `Ctrl+Shift+Z`
+- **Gêmeo 3D:** visualize após salvar, alternando para o modo **Operar**.
+- **Snap to grid:** 40px (mesmo grid do viewer).
+
+Documentação detalhada no vault Obsidian `SGM Industrial/` (notas *Editor de Planta — …*).
+
 ## API
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/health` | Health check |
+| GET | `/api/health` | Health check |
 | GET | `/plantas/:id` | Planta completa |
 | GET | `/plantas/:id/dashboard` | Dashboard agregado |
 | GET | `/alertas?plantaId=` | Alertas ativos |
@@ -93,3 +111,19 @@ Legado HTML (referência): `docs/legacy/html-app/index.html`
 | POST | `/ocorrencias` | Registrar ocorrência |
 | POST | `/andon` | Acionar Andon |
 | GET | `/maquinas/:id/analytics` | Análise profunda |
+
+### Layout (editor)
+
+Header opcional `X-SGM-Role`: `viewer` | `editor` | `admin` (stub RBAC; padrão `editor`).
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/plantas/:id/layout` | Planta completa para edição |
+| POST | `/plantas/:plantaId/setores` | Criar setor |
+| PATCH | `/setores/:id` | Metadados do setor |
+| PATCH | `/setores/:id/layout` | Atualizar `layout2d` (+ deriva `layout3d`) |
+| DELETE | `/setores/:id` | Remover setor e máquinas |
+| POST | `/setores/:setorId/maquinas` | Criar máquina |
+| PATCH | `/maquinas/:id` | Atualizar máquina |
+| PATCH | `/maquinas/:id/position` | Posição 2D da máquina |
+| DELETE | `/maquinas/:id` | Remover máquina |
