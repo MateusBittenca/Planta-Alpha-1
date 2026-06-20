@@ -15,6 +15,11 @@ export interface Layout3D {
   h: number;
 }
 
+export interface Posicao2D {
+  cx: number;
+  cy: number;
+}
+
 export interface MaquinaKpis {
   oee: number;
   temp: number;
@@ -33,6 +38,7 @@ export interface MaquinaDto {
   limits: MaquinaLimits;
   opAtiva?: string | null;
   oeeHistory: number[];
+  posicao2d?: Posicao2D;
 }
 
 export interface OpDto {
@@ -68,7 +74,21 @@ export interface PlantaResponse {
   nome: string;
   turnoAtual: 1 | 2 | 3;
   simTime: { hour: number; minute: number };
+  viewBox: string;
+  fatorEscala: number;
   setores: SetorDto[];
+}
+
+export interface LayoutVersionSummary {
+  id: string;
+  plantaId: string;
+  autor: string | null;
+  mensagem: string | null;
+  createdAt: string;
+}
+
+export interface LayoutVersionDto extends LayoutVersionSummary {
+  snapshot: PlantaResponse;
 }
 
 export interface AlertaFront {

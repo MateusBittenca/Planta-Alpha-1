@@ -21,6 +21,7 @@ model Planta {
   alertas     Alerta[]
   ocorrencias Ocorrencia[]
   eventos     EventoLog[]
+  layoutVersions LayoutVersion[]
 
   @@map("plantas")
 }
@@ -103,4 +104,17 @@ model EventoLog {
 
   @@index([plantaId])
   @@map("eventos_log")
+}
+
+model LayoutVersion {
+  id        String   @id @default(cuid())
+  plantaId  String   @map("planta_id")
+  snapshot  Json
+  autor     String?
+  mensagem  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  planta    Planta   @relation(fields: [plantaId], references: [id], onDelete: Cascade)
+
+  @@index([plantaId, createdAt])
+  @@map("layout_versions")
 }

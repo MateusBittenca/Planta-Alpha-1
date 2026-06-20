@@ -1,15 +1,27 @@
 import type { AlertaFront, OcorrenciaFront, PlantaResponse } from '@sgm/shared';
+import { NETWORK_UNAVAILABLE_MSG, normalizeApiMessage } from './httpError';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers as Record<string, string> | undefined) },
-    ...options,
-  });
+  const hasBody = options.body != null && options.body !== '';
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers as Record<string, string> | undefined),
+      },
+    });
+  } catch {
+    throw new Error(NETWORK_UNAVAILABLE_MSG);
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error || res.statusText);
+    const payload = err as { error?: string; message?: string };
+    throw new Error(normalizeApiMessage(payload.error || payload.message || res.statusText));
   }
   return res.json() as Promise<T>;
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { resolveMaquinaPosition } from '@sgm/shared';
 import { STATUS_COLORS, STATUS_LABELS } from '../../utils/colors';
 import { getSectorStatus } from '../../utils/sectorStatus';
 import { FLOW_PATHS, oeeHeatColor, usePlantaStore } from '../../store/plantaStore';
@@ -130,11 +131,6 @@ export function Viewport2D() {
                 const st = getSectorStatus(s);
                 const match = statusFilter === 'todos' || st === statusFilter;
                 const l = s.layout2d;
-                const rows = Math.ceil(Math.sqrt(s.maquinas.length));
-                const cols = Math.ceil(s.maquinas.length / rows);
-                const pad = 14;
-                const cw = (l.w - pad * 2) / cols;
-                const ch = (l.h - pad * 2 - 20) / rows;
                 const isActive = selectedId === s.id;
                 return (
                   <g
@@ -161,19 +157,17 @@ export function Viewport2D() {
                       {s.name.toUpperCase()}
                     </text>
                     {s.maquinas.map((m, i) => {
-                      const r = Math.floor(i / cols);
-                      const c = i % cols;
-                      const cx = l.x + pad + c * cw + cw / 2;
-                      const cy = l.y + pad + 24 + r * ch + ch / 2;
+                      const pos = resolveMaquinaPosition(m, s, i);
+                      const dotR = 10;
                       return (
                         <circle
                           key={m.id}
                           className={`machine-dot ${selectedMachineId === m.id ? 'machine-active' : ''}`}
                           data-sector={s.id}
                           data-machine={m.id}
-                          cx={cx}
-                          cy={cy}
-                          r={Math.min(cw, ch) * 0.28}
+                          cx={pos.cx}
+                          cy={pos.cy}
+                          r={dotR}
                           fill={STATUS_COLORS[m.status as keyof typeof STATUS_COLORS]}
                           stroke="#fff"
                           strokeWidth={1}

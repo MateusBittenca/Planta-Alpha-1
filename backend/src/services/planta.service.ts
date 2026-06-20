@@ -6,6 +6,7 @@ import type {
   ManutencaoDto,
   OpDto,
   PlantaResponse,
+  Posicao2D,
   SetorDto,
   StatusAtivo,
 } from '@sgm/shared';
@@ -19,6 +20,9 @@ function mapMaquina(m: Maquina): MaquinaDto {
     limits: m.limits as unknown as MaquinaDto['limits'],
     opAtiva: m.opAtiva,
     oeeHistory: m.oeeHistory as unknown as number[],
+    ...(m.posicao2d
+      ? { posicao2d: m.posicao2d as unknown as Posicao2D }
+      : {}),
   };
 }
 
@@ -67,6 +71,8 @@ export async function getPlantaById(id: string): Promise<PlantaResponse | null> 
     nome: planta.nome,
     turnoAtual: planta.turnoAtual as 1 | 2 | 3,
     simTime: { hour: planta.simHour, minute: planta.simMinute },
+    viewBox: planta.viewBox,
+    fatorEscala: planta.fatorEscala,
     setores: planta.setores.map(mapSetor),
   };
 }

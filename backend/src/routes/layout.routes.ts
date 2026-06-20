@@ -7,6 +7,10 @@ import {
   createSetor,
   deleteMaquina,
   deleteSetor,
+  getLayoutVersion,
+  listLayoutVersions,
+  publishLayoutVersion,
+  replacePlantaLayout,
   updateMaquina,
   updateMaquinaPosition,
   updateSetor,
@@ -56,6 +60,27 @@ const updateMaquinaPositionSchema = z.object({
   posicao2d: z.object({ cx: z.number(), cy: z.number() }),
 });
 
+const saveLayoutMachineSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().min(1),
+  limits: z.object({ tempMax: z.number() }).optional(),
+  posicao2d: z.object({ cx: z.number(), cy: z.number() }).optional(),
+});
+
+const saveLayoutSchema = z.object({
+  setores: z.array(
+    z.object({
+      id: z.string().min(1).max(64),
+      name: z.string().min(1),
+      type: z.enum(['produção', 'logística', 'qualidade']),
+      description: z.string().optional(),
+      layout2d: layout2dSchema,
+      maquinas: z.array(saveLayoutMachineSchema),
+    })
+  ),
+  mensagem: z.string().optional(),
+});
+
 function handleLayoutError(reply: import('fastify').FastifyReply, err: unknown) {
   if (err instanceof LayoutError) {
     return reply.status(err.statusCode).send({ error: err.message });
@@ -72,6 +97,21 @@ export async function layoutRoutes(app: FastifyInstance) {
     if (!planta) return reply.status(404).send({ error: 'Planta não encontrada' });
     return planta;
   });
+
+  app.put<{ Params: { id: string } }>(
+    '/plantas/:id/layout',
+    { preHandler: requireRole('editor') },
+    async (req, reply) => {
+      try {
+        const body = saveLayoutSchema.parse(req.body);
+        const autor = (req.headers['x-sgm-user'] as string | undefined) ?? 'editor';
+        const planta = await replacePlantaLayout(req.params.id, body, { autor });
+        return planta;
+      } catch (err) {
+        return handleLayoutError(reply, err);
+      }
+    }
+  );
 
   app.post<{ Params: { plantaId: string } }>(
     '/plantas/:plantaId/setores',
@@ -173,6 +213,46 @@ export async function layoutRoutes(app: FastifyInstance) {
       try {
         await deleteMaquina(req.params.id);
         return reply.status(204).send();
+      } catch (err) {
+        return handleLayoutError(reply, err);
+      }
+    }
+  );
+
+  app.post<{ Params: { id: string }; Body: { mensagem?: string } }>(
+    '/plantas/:id/layout/publish',
+    { preHandler: requireRole('editor') },
+    async (req, reply) => {
+      try {
+        const planta = await getPlantaById(req.params.id);
+        if (!planta) return reply.status(404).send({ error: 'Planta não encontrada' });
+        const autor = (req.headers['x-sgm-user'] as string | undefined) ?? 'editor';
+        const mensagem = (req.body as { mensagem?: string } | undefined)?.mensagem ?? 'Publicação manual';
+        const version = await publishLayoutVersion(req.params.id, planta, { autor, mensagem });
+        return reply.status(201).send(version);
+      } catch (err) {
+        return handleLayoutError(reply, err);
+      }
+    }
+  );
+
+  app.get<{ Params: { id: string }; Querystring: { limit?: string } }>(
+    '/plantas/:id/layout/versions',
+    async (req, reply) => {
+      try {
+        const limit = req.query.limit ? Number(req.query.limit) : 20;
+        return await listLayoutVersions(req.params.id, limit);
+      } catch (err) {
+        return handleLayoutError(reply, err);
+      }
+    }
+  );
+
+  app.get<{ Params: { id: string; versionId: string } }>(
+    '/plantas/:id/layout/versions/:versionId',
+    async (req, reply) => {
+      try {
+        return await getLayoutVersion(req.params.id, req.params.versionId);
       } catch (err) {
         return handleLayoutError(reply, err);
       }

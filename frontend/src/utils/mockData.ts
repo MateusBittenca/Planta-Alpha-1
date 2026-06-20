@@ -40,6 +40,8 @@ export const PLANTA_MOCK: PlantaResponse = {
   nome: 'Planta Alpha-1',
   turnoAtual: 2,
   simTime: { hour: 14, minute: 30 },
+  viewBox: '0 0 1200 750',
+  fatorEscala: 0.12,
   setores: [
     makeSector('recebimento', 'Recebimento', 'logística', 'operando', 'Descarga e triagem de componentes.', { headcount: 8, oee: null, status_operacional: 'Normal' }, { x: 40, y: 580, w: 180, h: 90 }, { x: -55, z: 45, w: 16, d: 22, h: 2 }, [
       makeMachine('REC-M1', 'Doca 1', 'operando', 90), makeMachine('REC-M2', 'Doca 2', 'operando', 88),

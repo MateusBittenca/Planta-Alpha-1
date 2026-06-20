@@ -25,6 +25,12 @@
   stroke-width: 2.5px !important;
   fill: rgba(248, 64, 24, 0.08) !important;
 }
+.zone-path.zone-parent-selected rect {
+  stroke: #b32200 !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 6 4;
+  fill: rgba(179, 34, 0, 0.04) !important;
+}
 .zone-path.zone-status-operando rect { fill: rgba(46, 125, 50, 0.04); stroke: #2e7d32; }
 .zone-path.zone-status-manutencao rect { fill: rgba(2, 136, 209, 0.06); stroke: #0288d1; }
 .zone-path.zone-status-alerta rect { fill: rgba(211, 47, 47, 0.06); stroke: #d32f2f; }
@@ -89,9 +95,25 @@
 .view-hidden { opacity: 0; pointer-events: none; z-index: 0; }
 .view-active { opacity: 1; pointer-events: auto; z-index: 10; }
 
-.machine-dot { cursor: pointer; transition: all 0.2s; }
+.machines-layer { pointer-events: all; }
+.validation-layer { pointer-events: all; }
+.machine-hit { pointer-events: all; cursor: grab; }
+.machine-dot { transition: all 0.2s; }
 .machine-dot:hover { stroke-width: 2; filter: brightness(1.1); }
 .machine-dot.machine-active { stroke: #b32200; stroke-width: 2.5; }
+#view-2d .machine-dot { cursor: pointer; }
+.machine-selection-ring { pointer-events: none; fill: none; stroke: #b32200; stroke-width: 2; stroke-dasharray: 4 3; }
+
+.editor-mode .zone-path { transition: none; }
+.editor-mode .machine-dot { transition: none; pointer-events: none; }
+.editor-mode .map-container { cursor: default; }
+.editor-mode .map-container.editor-tool-select .zone-path { cursor: pointer; }
+.editor-mode .map-container.editor-tool-rect,
+.editor-mode .map-container.editor-tool-machine { cursor: crosshair; }
+.editor-mode .map-container.editor-tool-pan { cursor: grab; }
+.editor-mode .map-container.is-panning { cursor: grabbing; }
+.editor-mode .map-container.is-panning .machines-layer { pointer-events: none; }
+.editor-mode .machine-hit:active { cursor: grabbing; }
 
 .flow-arrow { fill: none; stroke: #b32200; stroke-width: 2; stroke-dasharray: 8 6; animation: flow-dash 1.2s linear infinite; opacity: 0.6; pointer-events: none; }
 .flow-arrow.hidden-flow { display: none; }

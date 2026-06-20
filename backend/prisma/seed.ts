@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { autoGridPosition } from '@sgm/shared';
 import { ALERTAS_SEED, PLANTA_SEED } from './seed-data';
 
 const prisma = new PrismaClient();
@@ -45,7 +46,9 @@ async function main() {
       },
     });
 
-    for (const m of maquinas) {
+    for (let mi = 0; mi < maquinas.length; mi++) {
+      const m = maquinas[mi];
+      const posicao2d = autoGridPosition(setorData.layout2d, mi, maquinas.length);
       await prisma.maquina.upsert({
         where: { id: m.id },
         create: {
@@ -57,6 +60,7 @@ async function main() {
           limits: m.limits,
           opAtiva: m.opAtiva,
           oeeHistory: m.oeeHistory,
+          posicao2d,
         },
         update: {
           name: m.name,
@@ -65,6 +69,7 @@ async function main() {
           limits: m.limits,
           opAtiva: m.opAtiva,
           oeeHistory: m.oeeHistory,
+          posicao2d,
         },
       });
     }

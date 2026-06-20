@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles/index.css';
+import { ToastContainer } from './components/feedback/ToastContainer';
 import { usePlantaStore } from './store/plantaStore';
 
 function Bootstrap() {
@@ -13,7 +14,12 @@ function Bootstrap() {
     return () => stopSimulator();
   }, [bootstrap, stopSimulator]);
 
-  return <App />;
+  return (
+    <>
+      <App />
+      <ToastContainer />
+    </>
+  );
 }
 
 createRoot(document.getElementById('root')!).render(<Bootstrap />);

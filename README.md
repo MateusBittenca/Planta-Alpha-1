@@ -89,10 +89,15 @@ Modo **Editar layout** na TopBar (atalho `V` para voltar a Operar).
 |------------|--------|------|
 | Selecionar | `S` | Mover/redimensionar setores (8 handles) |
 | Retângulo | `R` | Desenhar novo setor (click + drag) |
-| Máquina | `M` | Adicionar máquina no setor selecionado |
+| Máquina | `M` | Clicar no setor para posicionar; arrastar com Selecionar |
 | Pan | toolbar | Arrastar o canvas |
 
-- **Salvar:** botão na toolbar ou `Ctrl+S` — persiste via API REST; `layout3d` é derivado no backend.
+- **Posição de máquina:** `posicao2d` persistido; drag com snap 40px dentro do setor.
+- **Dimensões:** label flutuante em px e metros (`fatorEscala` da planta).
+- **Validação visual:** sobreposição de setores (aviso), máquina fora do setor (bloqueia auto-save).
+- **Auto-save:** debounce 2,5s (toggle na toolbar); toasts de sucesso/erro.
+- **Histórico:** cada save cria `LayoutVersion` no PostgreSQL.
+- **Salvar:** botão na toolbar ou `⌘S` — persiste via API REST; `layout3d` derivado no backend.
 - **Undo/redo:** `Ctrl+Z` / `Ctrl+Shift+Z`
 - **Gêmeo 3D:** visualize após salvar, alternando para o modo **Operar**.
 - **Snap to grid:** 40px (mesmo grid do viewer).
@@ -127,3 +132,6 @@ Header opcional `X-SGM-Role`: `viewer` | `editor` | `admin` (stub RBAC; padrão 
 | PATCH | `/maquinas/:id` | Atualizar máquina |
 | PATCH | `/maquinas/:id/position` | Posição 2D da máquina |
 | DELETE | `/maquinas/:id` | Remover máquina |
+| POST | `/plantas/:id/layout/publish` | Snapshot `LayoutVersion` |
+| GET | `/plantas/:id/layout/versions` | Histórico de versões |
+| GET | `/plantas/:id/layout/versions/:versionId` | Snapshot completo |
