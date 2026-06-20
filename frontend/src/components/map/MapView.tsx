@@ -5,9 +5,11 @@ import { usePlantaStore } from '../../store/plantaStore';
 
 export function MapView() {
   const is3D = usePlantaStore((s) => s.is3D);
+  const selectedId = usePlantaStore((s) => s.selectedId);
   const toggleView = usePlantaStore((s) => s.toggleView);
   const toggleMaterialFlow = usePlantaStore((s) => s.toggleMaterialFlow);
   const toggleHeatmap = usePlantaStore((s) => s.toggleHeatmap);
+  const focusOnSelection = usePlantaStore((s) => s.focusOnSelection);
   const showHeatmap = usePlantaStore((s) => s.showHeatmap);
 
   return (
@@ -19,7 +21,9 @@ export function MapView() {
               {is3D ? 'Visualizador 3D Alpha-1' : 'Plano de Chão 2D'}
             </h2>
             <p className="text-on-surface-variant font-label-md">
-              {is3D ? 'Gêmeo Digital Interativo' : 'Arraste · Scroll · Clique setores/máquinas'}
+              {is3D
+                ? 'Arrastar: orbitar · Botão direito: pan · Scroll: zoom · Duplo clique: centralizar'
+                : 'Arraste · Scroll · Clique setores/máquinas'}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
@@ -39,6 +43,17 @@ export function MapView() {
               <span className="material-symbols-outlined text-sm">thermostat</span>
               <span>Heatmap</span>
             </button>
+            {is3D && selectedId && (
+              <button
+                type="button"
+                className="flex items-center gap-1 px-3 py-2 border border-outline-variant text-on-surface-variant font-label-md hover:bg-secondary-container/10 transition-all text-xs"
+                onClick={() => focusOnSelection()}
+                title="Centralizar câmera no ativo selecionado"
+              >
+                <span className="material-symbols-outlined text-sm">center_focus_strong</span>
+                <span>Centralizar</span>
+              </button>
+            )}
             <button
               type="button"
               className="flex items-center gap-2 px-4 py-2 border border-primary text-primary font-label-md hover:bg-primary/5 transition-all"

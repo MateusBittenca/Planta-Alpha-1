@@ -40,7 +40,8 @@ interface PlantaStore {
   sceneRef: { current: Scene3DRef | null };
   bootstrap: () => Promise<void>;
   applyTelemetryPatch: (msg: WsMessage) => void;
-  selectZone: (id: string, machineId?: string | null) => void;
+  selectZone: (id: string, machineId?: string | null, opts?: { focusCamera?: boolean }) => void;
+  focusOnSelection: () => void;
   clearSelection: () => void;
   setMainView: (view: MainView) => void;
   setStatusFilter: (f: StatusAtivo | 'todos') => void;
@@ -76,6 +77,7 @@ export interface Scene3DRef {
   resetView: () => void;
   updateFromData: () => void;
   setPlanta: (planta: PlantaResponse) => void;
+  setActive: (active: boolean) => void;
   applyIsolation: (selectedId: string | null) => void;
   applyStatusFilter: (filter: StatusAtivo | 'todos', getStatus: (id: string) => StatusAtivo) => void;
 }
@@ -165,7 +167,7 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
         m.oeeHistory = msg.oeeHistory;
       }
       get().updateVisualsFromData();
-      if (selectedId) set({ planta: { ...planta } });
+      set({ planta: { ...planta } });
     } else if (msg.type === 'op_progress') {
       const s = getSetor(planta, msg.sectorId);
       if (s?.op) {
@@ -186,18 +188,24 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
     }
   },
 
-  selectZone: (id, machineId = null) => {
+  selectZone: (id, machineId = null, opts) => {
     const { planta, is3D, sceneRef } = get();
     if (!planta || !getSetor(planta, id)) return;
     set({ selectedId: id, selectedMachineId: machineId });
 
     sceneRef.current?.applyIsolation(id);
 
-    if (machineId) {
-      sceneRef.current?.focusCameraOn(machineId);
-    } else if (is3D) {
-      sceneRef.current?.focusCameraOn(id);
+    if (opts?.focusCamera && is3D) {
+      if (machineId) sceneRef.current?.focusCameraOn(machineId);
+      else sceneRef.current?.focusCameraOn(id);
     }
+  },
+
+  focusOnSelection: () => {
+    const { selectedId, selectedMachineId, is3D, sceneRef } = get();
+    if (!selectedId || !is3D) return;
+    if (selectedMachineId) sceneRef.current?.focusCameraOn(selectedMachineId);
+    else sceneRef.current?.focusCameraOn(selectedId);
   },
 
   clearSelection: () => {
@@ -265,7 +273,7 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
   navigateAlert: (sectorId, machineId = null) => {
     get().closeAllOverlays();
     set({ mainView: 'mapa' });
-    get().selectZone(sectorId, machineId);
+    get().selectZone(sectorId, machineId, { focusCamera: true });
   },
 
   triggerAndon: async (tipo) => {
@@ -352,7 +360,7 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
     for (const s of planta.setores) {
       if (s.name.toLowerCase().includes(q) || s.id.includes(q)) {
         set({ mainView: 'mapa' });
-        get().selectZone(s.id);
+        get().selectZone(s.id, null, { focusCamera: true });
         return true;
       }
       for (const m of s.maquinas) {
@@ -362,13 +370,13 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
           (m.opAtiva && m.opAtiva.toLowerCase().includes(q))
         ) {
           set({ mainView: 'mapa' });
-          get().selectZone(s.id, m.id);
+          get().selectZone(s.id, m.id, { focusCamera: true });
           return true;
         }
       }
       if (s.op && s.op.id.toLowerCase().includes(q)) {
         set({ mainView: 'mapa' });
-        get().selectZone(s.id);
+        get().selectZone(s.id, null, { focusCamera: true });
         return true;
       }
     }
@@ -411,7 +419,6 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
       const s = getSetor(planta, id);
       return s ? getSectorStatus(s) : 'offline';
     });
-    set({ planta: { ...planta } });
   },
 
   tickSimulator: () => {

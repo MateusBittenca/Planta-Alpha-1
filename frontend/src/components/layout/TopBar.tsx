@@ -58,7 +58,7 @@ export function TopBar() {
           {selectedId && (
             <>
               {' › '}
-              <button type="button" className="hover:text-primary" onClick={() => selectZone(selectedId)}>
+              <button type="button" className="hover:text-primary" onClick={() => selectZone(selectedId, null, { focusCamera: true })}>
                 {planta.setores.find((s) => s.id === selectedId)?.name}
               </button>
             </>

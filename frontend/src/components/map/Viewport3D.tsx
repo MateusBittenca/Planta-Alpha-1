@@ -8,11 +8,15 @@ export function Viewport3D() {
   const sceneRef = useRef<(Scene3DRef & { dispose: () => void }) | null>(null);
   const layoutFpRef = useRef<string | null>(null);
   const planta = usePlantaStore((s) => s.planta);
+  const plantaId = planta?.id ?? null;
   const selectZone = usePlantaStore((s) => s.selectZone);
   const setSceneRef = usePlantaStore((s) => s.setSceneRef);
   const is3D = usePlantaStore((s) => s.is3D);
   const [webglError, setWebglError] = useState(false);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; html: string } | null>(null);
+
+  const selectZoneRef = useRef(selectZone);
+  selectZoneRef.current = selectZone;
 
   const showTooltip = useCallback((m: { id: string; kpis: { oee: number }; status: string }) => {
     setTooltip({
@@ -24,31 +28,6 @@ export function Viewport3D() {
 
   const hideTooltip = useCallback(() => setTooltip(null), []);
 
-  const mountScene = useCallback(() => {
-    const el = containerRef.current;
-    if (!el || !planta || sceneRef.current) return false;
-    if (el.clientWidth < 1 || el.clientHeight < 1) return false;
-
-    try {
-      const scene = buildScene3D(
-        el,
-        planta,
-        (sectorId, machineId) => selectZone(sectorId, machineId),
-        showTooltip,
-        hideTooltip
-      );
-      sceneRef.current = scene;
-      layoutFpRef.current = layoutFingerprint(planta);
-      setSceneRef(scene);
-      setWebglError(false);
-      return true;
-    } catch (err) {
-      console.error('Falha ao inicializar WebGL/Three.js:', err);
-      setWebglError(true);
-      return false;
-    }
-  }, [planta, selectZone, setSceneRef, showTooltip, hideTooltip]);
-
   const disposeScene = useCallback(() => {
     sceneRef.current?.dispose();
     sceneRef.current = null;
@@ -56,21 +35,51 @@ export function Viewport3D() {
     setSceneRef(null);
   }, [setSceneRef]);
 
-  useLayoutEffect(() => {
-    if (!planta) return;
+  const tryMountScene = useCallback(() => {
+    const el = containerRef.current;
+    const currentPlanta = usePlantaStore.getState().planta;
+    if (!el || !currentPlanta || sceneRef.current) return false;
+    if (el.clientWidth < 1 || el.clientHeight < 1) return false;
 
-    if (mountScene()) return disposeScene;
+    try {
+      const scene = buildScene3D(
+        el,
+        currentPlanta,
+        (sectorId, machineId) => selectZoneRef.current(sectorId, machineId),
+        showTooltip,
+        hideTooltip
+      );
+      sceneRef.current = scene;
+      layoutFpRef.current = layoutFingerprint(currentPlanta);
+      setSceneRef(scene);
+      scene.setActive(is3D && !document.hidden);
+      setWebglError(false);
+      return true;
+    } catch (err) {
+      console.error('Falha ao inicializar WebGL/Three.js:', err);
+      setWebglError(true);
+      return false;
+    }
+  }, [setSceneRef, showTooltip, hideTooltip, is3D]);
+
+  // Monta uma vez por planta — nunca remonta em tick do simulador
+  useLayoutEffect(() => {
+    if (!plantaId) return;
+
+    if (tryMountScene()) {
+      return () => disposeScene();
+    }
 
     const el = containerRef.current;
-    if (!el) return disposeScene;
+    if (!el) return () => disposeScene();
 
     const observer = new ResizeObserver(() => {
-      if (!sceneRef.current) mountScene();
+      if (!sceneRef.current) tryMountScene();
     });
     observer.observe(el);
 
     const raf = requestAnimationFrame(() => {
-      if (!sceneRef.current) mountScene();
+      if (!sceneRef.current) tryMountScene();
     });
 
     return () => {
@@ -78,8 +87,9 @@ export function Viewport3D() {
       observer.disconnect();
       disposeScene();
     };
-  }, [planta, mountScene, disposeScene]);
+  }, [plantaId, tryMountScene, disposeScene]);
 
+  // KPI/status vs layout
   useEffect(() => {
     if (!planta || !sceneRef.current) return;
     const fp = layoutFingerprint(planta);
@@ -90,6 +100,18 @@ export function Viewport3D() {
     }
     sceneRef.current.updateFromData();
   }, [planta]);
+
+  useEffect(() => {
+    sceneRef.current?.setActive(is3D && !document.hidden);
+  }, [is3D]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      sceneRef.current?.setActive(is3D && !document.hidden);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [is3D]);
 
   const selectedId = usePlantaStore((s) => s.selectedId);
   useEffect(() => {

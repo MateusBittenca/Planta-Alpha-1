@@ -92,7 +92,7 @@ export function Sidebar() {
                   key={s.id}
                   type="button"
                   className="w-full flex items-center justify-between px-4 py-2 text-label-md text-on-surface-variant hover:bg-surface-container rounded transition-colors group sector-nav-btn"
-                  onClick={() => selectZone(s.id)}
+                  onClick={() => selectZone(s.id, null, { focusCamera: true })}
                 >
                   <span className="flex items-center gap-3">
                     <span className={`w-2 h-2 rounded-full ${pulse}`} style={{ background: STATUS_COLORS[st] }} />
