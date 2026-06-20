@@ -83,6 +83,32 @@ export function deriveLayout3D(
   };
 }
 
+/** Diâmetro aproximado do marcador 2D (círculo r=10). */
+export const MACHINE_FOOTPRINT_PX = 20;
+export const MACHINE_HEIGHT_3D = 1.6;
+
+/** Posição local (x/z) da máquina dentro do grupo 3D do setor. */
+export function deriveMachinePosition3D(
+  posicao2d: Posicao2D,
+  layout2d: Layout2D,
+  fatorEscala: number
+): { x: number; z: number } {
+  const cx2d = layout2d.x + layout2d.w / 2;
+  const cy2d = layout2d.y + layout2d.h / 2;
+  return {
+    x: Math.round((posicao2d.cx - cx2d) * fatorEscala * 10) / 10,
+    z: Math.round((posicao2d.cy - cy2d) * fatorEscala * 10) / 10,
+  };
+}
+
+export function deriveMachineSize3D(
+  fatorEscala: number,
+  footprintPx = MACHINE_FOOTPRINT_PX
+): { w: number; d: number } {
+  const size = pxToMeters(footprintPx, fatorEscala);
+  return { w: size, d: size };
+}
+
 export function isInsideSetor(layout2d: Layout2D, pos: Posicao2D): boolean {
   return (
     pos.cx >= layout2d.x &&

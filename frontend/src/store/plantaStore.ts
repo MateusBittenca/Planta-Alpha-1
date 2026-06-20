@@ -75,8 +75,21 @@ export interface Scene3DRef {
   focusCameraOn: (obj: unknown) => void;
   resetView: () => void;
   updateFromData: () => void;
+  setPlanta: (planta: PlantaResponse) => void;
   applyIsolation: (selectedId: string | null) => void;
   applyStatusFilter: (filter: StatusAtivo | 'todos', getStatus: (id: string) => StatusAtivo) => void;
+}
+
+export function layoutFingerprint(planta: PlantaResponse): string {
+  return planta.setores
+    .map(
+      (s) =>
+        `${s.id}:${s.layout2d.x},${s.layout2d.y},${s.layout2d.w},${s.layout2d.h},${s.layout3d.x},${s.layout3d.z}:` +
+        s.maquinas
+          .map((m) => `${m.id}@${m.posicao2d?.cx ?? ''},${m.posicao2d?.cy ?? ''}`)
+          .join(',')
+    )
+    .join('|');
 }
 
 function clonePlanta(data: PlantaResponse): PlantaResponse {

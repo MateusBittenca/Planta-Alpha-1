@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { buildScene3D } from '../../scenes/buildScene3D';
-import { usePlantaStore } from '../../store/plantaStore';
+import { usePlantaStore, layoutFingerprint } from '../../store/plantaStore';
 import type { Scene3DRef } from '../../store/plantaStore';
 
 export function Viewport3D() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<(Scene3DRef & { dispose: () => void }) | null>(null);
+  const layoutFpRef = useRef<string | null>(null);
   const planta = usePlantaStore((s) => s.planta);
   const selectZone = usePlantaStore((s) => s.selectZone);
   const setSceneRef = usePlantaStore((s) => s.setSceneRef);
@@ -37,6 +38,7 @@ export function Viewport3D() {
         hideTooltip
       );
       sceneRef.current = scene;
+      layoutFpRef.current = layoutFingerprint(planta);
       setSceneRef(scene);
       setWebglError(false);
       return true;
@@ -50,6 +52,7 @@ export function Viewport3D() {
   const disposeScene = useCallback(() => {
     sceneRef.current?.dispose();
     sceneRef.current = null;
+    layoutFpRef.current = null;
     setSceneRef(null);
   }, [setSceneRef]);
 
@@ -78,7 +81,14 @@ export function Viewport3D() {
   }, [planta, mountScene, disposeScene]);
 
   useEffect(() => {
-    sceneRef.current?.updateFromData();
+    if (!planta || !sceneRef.current) return;
+    const fp = layoutFingerprint(planta);
+    if (fp !== layoutFpRef.current) {
+      layoutFpRef.current = fp;
+      sceneRef.current.setPlanta(planta);
+      return;
+    }
+    sceneRef.current.updateFromData();
   }, [planta]);
 
   const selectedId = usePlantaStore((s) => s.selectedId);

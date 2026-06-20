@@ -3,6 +3,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import gsap from 'gsap';
 import type { PlantaResponse, StatusAtivo } from '@sgm/shared';
+import {
+  deriveMachinePosition3D,
+  deriveMachineSize3D,
+  MACHINE_HEIGHT_3D,
+  resolveMaquinaPosition,
+} from '@sgm/shared';
 import { COLORS_3D, STATUS_LABELS } from '../utils/colors';
 import { getSectorStatus, seedHash } from '../utils/sectorStatus';
 import type { Scene3DRef } from '../store/plantaStore';
@@ -110,14 +116,15 @@ export function buildScene3D(
       label.position.set(0, l.h + 2, 0);
       group.add(label);
 
-      const rows = Math.ceil(Math.sqrt(s.maquinas.length));
-      const cols = Math.ceil(s.maquinas.length / rows);
-      const sx = (l.w - 3) / cols;
-      const sz = (l.d - 3) / rows;
+      const { w: machineW, d: machineD } = deriveMachineSize3D(data.fatorEscala);
 
       s.maquinas.forEach((m, i) => {
-        const r = Math.floor(i / cols);
-        const c = i % cols;
+        const pos2d = resolveMaquinaPosition(m, s, i);
+        const { x: localX, z: localZ } = deriveMachinePosition3D(
+          pos2d,
+          s.layout2d,
+          data.fatorEscala
+        );
         const col = COLORS_3D[m.status as StatusAtivo] || COLORS_3D.operando;
         const mMat = new THREE.MeshStandardMaterial({
           color: col,
@@ -126,8 +133,11 @@ export function buildScene3D(
           emissive: col,
           emissiveIntensity: m.status === 'alerta' ? 0.3 : 0.05,
         });
-        const machine = new THREE.Mesh(new THREE.BoxGeometry(sx * 0.65, 1.6, sz * 0.65), mMat);
-        machine.position.set(-l.w / 2 + 1.5 + c * sx + sx / 2, l.h + 0.8, -l.d / 2 + 1.5 + r * sz + sz / 2);
+        const machine = new THREE.Mesh(
+          new THREE.BoxGeometry(machineW, MACHINE_HEIGHT_3D, machineD),
+          mMat
+        );
+        machine.position.set(localX, l.h + MACHINE_HEIGHT_3D / 2, localZ);
         machine.castShadow = true;
         machine.userData = { type: 'machine', sectorId: s.id, machineId: m.id, status: m.status };
         group.add(machine);
@@ -340,7 +350,7 @@ export function buildScene3D(
   resizeObserver.observe(container);
   window.addEventListener('resize', onResize);
 
-  const controller: Scene3DRef & { dispose: () => void; setPlanta: (p: PlantaResponse) => void } = {
+  const controller: Scene3DRef & { dispose: () => void } = {
     focusCameraOn: (obj) => focusCameraOn(obj as THREE.Object3D | string),
     resetView,
     updateFromData,
