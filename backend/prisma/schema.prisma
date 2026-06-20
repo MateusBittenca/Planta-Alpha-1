@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Planta {
+  id          String       @id
+  nome        String
+  turnoAtual  Int          @default(2) @map("turno_atual")
+  simHour     Int          @default(14) @map("sim_hour")
+  simMinute   Int          @default(30) @map("sim_minute")
+  viewBox     String       @default("0 0 1200 750")
+  fatorEscala Float        @default(0.12) @map("fator_escala")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  setores     Setor[]
+  alertas     Alerta[]
+  ocorrencias Ocorrencia[]
+  eventos     EventoLog[]
+
+  @@map("plantas")
+}
+
+model Setor {
+  id          String    @id
+  plantaId    String    @map("planta_id")
+  name        String
+  type        String
+  status      String
+  description String
+  layout2d    Json
+  layout3d    Json
+  kpis        Json
+  op          Json?
+  manutencao  Json?
+  ordem       Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  planta      Planta    @relation(fields: [plantaId], references: [id], onDelete: Cascade)
+  maquinas    Maquina[]
+
+  @@index([plantaId])
+  @@map("setores")
+}
+
+model Maquina {
+  id         String   @id
+  setorId    String   @map("setor_id")
+  name       String
+  status     String
+  kpis       Json
+  limits     Json
+  opAtiva    String?  @map("op_ativa")
+  oeeHistory Json     @map("oee_history")
+  posicao2d  Json?    @map("posicao_2d")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  setor      Setor    @relation(fields: [setorId], references: [id], onDelete: Cascade)
+
+  @@index([setorId])
+  @@map("maquinas")
+}
+
+model Alerta {
+  id         String   @id @default(cuid())
+  plantaId   String   @map("planta_id")
+  sectorId   String?  @map("sector_id")
+  machineId  String?  @map("machine_id")
+  severidade String
+  msg        String
+  resolvido  Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+  planta     Planta   @relation(fields: [plantaId], references: [id], onDelete: Cascade)
+
+  @@index([plantaId, resolvido])
+  @@map("alertas")
+}
+
+model Ocorrencia {
+  id        String   @id @default(cuid())
+  plantaId  String   @map("planta_id")
+  asset     String
+  type      String
+  descricao String
+  createdAt DateTime @default(now()) @map("created_at")
+  planta    Planta   @relation(fields: [plantaId], references: [id], onDelete: Cascade)
+
+  @@index([plantaId])
+  @@map("ocorrencias")
+}
+
+model EventoLog {
+  id        String   @id @default(cuid())
+  plantaId  String   @map("planta_id")
+  type      String
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+  planta    Planta   @relation(fields: [plantaId], references: [id], onDelete: Cascade)
+
+  @@index([plantaId])
+  @@map("eventos_log")
+}

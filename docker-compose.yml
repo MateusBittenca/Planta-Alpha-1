@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sgm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sgm
+      POSTGRES_PASSWORD: sgm_secret
+      POSTGRES_DB: sgm_industrial
+    ports:
+      - "15432:5432"
+    volumes:
+      - sgm_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sgm -d sgm_industrial"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sgm_pg_data:
