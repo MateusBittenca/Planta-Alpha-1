@@ -9,7 +9,6 @@ export function DashboardView() {
   const planta = usePlantaStore((s) => s.planta)!;
   const alerts = usePlantaStore((s) => s.alerts);
   const eventLog = usePlantaStore((s) => s.eventLog);
-  const useMock = usePlantaStore((s) => s.useMock);
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<Chart | null>(null);
 
@@ -24,14 +23,7 @@ export function DashboardView() {
     .sort((a, b) => (a.kpis.oee as number) - (b.kpis.oee as number))
     .slice(0, 3);
 
-  const timeline = useMock
-    ? [
-        ...eventLog,
-        ...JSON.parse(localStorage.getItem('sgm_occurrences') || '[]').map(
-          (o: { desc: string; time: string }) => ({ type: 'ocorrencia', text: o.desc, time: o.time })
-        ),
-      ].slice(0, 15)
-    : eventLog.slice(0, 15);
+  const timeline = eventLog.slice(0, 15);
 
   useEffect(() => {
     const ctx = chartRef.current;

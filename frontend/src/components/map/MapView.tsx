@@ -7,10 +7,7 @@ export function MapView() {
   const is3D = usePlantaStore((s) => s.is3D);
   const selectedId = usePlantaStore((s) => s.selectedId);
   const toggleView = usePlantaStore((s) => s.toggleView);
-  const toggleMaterialFlow = usePlantaStore((s) => s.toggleMaterialFlow);
-  const toggleHeatmap = usePlantaStore((s) => s.toggleHeatmap);
   const focusOnSelection = usePlantaStore((s) => s.focusOnSelection);
-  const showHeatmap = usePlantaStore((s) => s.showHeatmap);
 
   return (
     <>
@@ -27,22 +24,6 @@ export function MapView() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
-            <button
-              type="button"
-              className="flex items-center gap-1 px-3 py-2 border border-outline-variant text-on-surface-variant font-label-md hover:bg-secondary-container/10 transition-all text-xs"
-              onClick={toggleMaterialFlow}
-            >
-              <span className="material-symbols-outlined text-sm">route</span>
-              <span>Fluxo</span>
-            </button>
-            <button
-              type="button"
-              className={`flex items-center gap-1 px-3 py-2 border text-on-surface-variant font-label-md hover:bg-secondary-container/10 transition-all text-xs ${showHeatmap ? 'border-primary' : 'border-outline-variant'}`}
-              onClick={toggleHeatmap}
-            >
-              <span className="material-symbols-outlined text-sm">thermostat</span>
-              <span>Heatmap</span>
-            </button>
             {is3D && selectedId && (
               <button
                 type="button"

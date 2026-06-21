@@ -115,11 +115,6 @@
 .editor-mode .map-container.is-panning .machines-layer { pointer-events: none; }
 .editor-mode .machine-hit:active { cursor: grabbing; }
 
-.flow-arrow { fill: none; stroke: #b32200; stroke-width: 2; stroke-dasharray: 8 6; animation: flow-dash 1.2s linear infinite; opacity: 0.6; pointer-events: none; }
-.flow-arrow.hidden-flow { display: none; }
-@keyframes flow-dash { to { stroke-dashoffset: -14; } }
-
-.zone-path.zone-heatmap rect { stroke-width: 2; }
 .zone-path.zone-filtered-out { opacity: 0.2; pointer-events: none; }
 .filter-chip.active { background: rgba(179,34,0,0.12); border-color: #b32200; color: #b32200; font-weight: 700; }
 .nav-link.active { color: #b32200; font-weight: 700; border-right: 4px solid #b32200; background: rgba(205,232,230,0.2); }

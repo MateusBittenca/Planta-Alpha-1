@@ -2,13 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import { resolveMaquinaPosition } from '@sgm/shared';
 import { STATUS_COLORS, STATUS_LABELS } from '../../utils/colors';
 import { getSectorStatus } from '../../utils/sectorStatus';
-import { FLOW_PATHS, oeeHeatColor, usePlantaStore } from '../../store/plantaStore';
+import { usePlantaStore } from '../../store/plantaStore';
 
 export function Viewport2D() {
   const planta = usePlantaStore((s) => s.planta)!;
   const is3D = usePlantaStore((s) => s.is3D);
-  const showFlow = usePlantaStore((s) => s.showFlow);
-  const showHeatmap = usePlantaStore((s) => s.showHeatmap);
   const statusFilter = usePlantaStore((s) => s.statusFilter);
   const selectedId = usePlantaStore((s) => s.selectedId);
   const selectedMachineId = usePlantaStore((s) => s.selectedMachineId);
@@ -111,21 +109,8 @@ export function Viewport2D() {
               <pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
                 <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E2E8F0" strokeWidth="1" />
               </pattern>
-              <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                <polygon points="0 0, 8 3, 0 6" fill="#b32200" />
-              </marker>
             </defs>
             <rect fill="url(#grid)" height="100%" width="100%" />
-            <g id="flow-layer">
-              {FLOW_PATHS.map((d) => (
-                <path
-                  key={d}
-                  d={d}
-                  className={`flow-arrow ${!showFlow ? 'hidden-flow' : ''}`}
-                  markerEnd="url(#arrowhead)"
-                />
-              ))}
-            </g>
             <g id="zones-layer">
               {planta.setores.map((s) => {
                 const st = getSectorStatus(s);
@@ -135,7 +120,7 @@ export function Viewport2D() {
                 return (
                   <g
                     key={s.id}
-                    className={`zone-path zone-status-${st} ${!match ? 'zone-filtered-out' : ''} ${isActive ? 'zone-active' : ''} ${showHeatmap ? 'zone-heatmap' : ''}`}
+                    className={`zone-path zone-status-${st} ${!match ? 'zone-filtered-out' : ''} ${isActive ? 'zone-active' : ''}`}
                     id={`zone-${s.id}`}
                     data-zone={s.id}
                     onClick={() => handleZoneClick(s.id)}
@@ -146,7 +131,6 @@ export function Viewport2D() {
                       width={l.w}
                       height={l.h}
                       rx="4"
-                      fill={showHeatmap && s.kpis.oee != null ? oeeHeatColor(s.kpis.oee as number) : undefined}
                     />
                     <text
                       x={l.x + 10}

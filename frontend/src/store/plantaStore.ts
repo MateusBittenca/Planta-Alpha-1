@@ -4,7 +4,6 @@ import * as api from '../api/client';
 import { connectTelemetry } from '../api/websocket';
 import { STATUS_COLORS } from '../utils/colors';
 import { formatSimTime, getMachine, getSectorStatus, getSetor, seedHash } from '../utils/sectorStatus';
-import { isMockMode, PLANTA_MOCK } from '../utils/mockData';
 
 export type MainView = 'mapa' | 'dashboard';
 export type DrawerName = 'alerts' | 'analysis' | null;
@@ -19,15 +18,13 @@ export interface Map2DState {
 
 interface PlantaStore {
   planta: PlantaResponse | null;
-  useMock: boolean;
+  loadError: string | null;
   ready: boolean;
   mainView: MainView;
   is3D: boolean;
   selectedId: string | null;
   selectedMachineId: string | null;
   statusFilter: StatusAtivo | 'todos';
-  showFlow: boolean;
-  showHeatmap: boolean;
   alerts: AlertaFront[];
   eventLog: EventoLogFront[];
   map2d: Map2DState;
@@ -39,6 +36,7 @@ interface PlantaStore {
   clockInterval: ReturnType<typeof setInterval> | null;
   sceneRef: { current: Scene3DRef | null };
   bootstrap: () => Promise<void>;
+  retryBootstrap: () => Promise<void>;
   applyTelemetryPatch: (msg: WsMessage) => void;
   selectZone: (id: string, machineId?: string | null, opts?: { focusCamera?: boolean }) => void;
   focusOnSelection: () => void;
@@ -46,8 +44,6 @@ interface PlantaStore {
   setMainView: (view: MainView) => void;
   setStatusFilter: (f: StatusAtivo | 'todos') => void;
   toggleView: () => void;
-  toggleMaterialFlow: () => void;
-  toggleHeatmap: () => void;
   setTurno: (t: 1 | 2 | 3) => void;
   openDrawer: (name: DrawerName) => void;
   closeDrawer: (_name?: DrawerName) => void;
@@ -94,21 +90,15 @@ export function layoutFingerprint(planta: PlantaResponse): string {
     .join('|');
 }
 
-function clonePlanta(data: PlantaResponse): PlantaResponse {
-  return JSON.parse(JSON.stringify(data)) as PlantaResponse;
-}
-
 export const usePlantaStore = create<PlantaStore>((set, get) => ({
   planta: null,
-  useMock: false,
+  loadError: null,
   ready: false,
   mainView: 'mapa',
   is3D: true,
   selectedId: null,
   selectedMachineId: null,
   statusFilter: 'todos',
-  showFlow: true,
-  showHeatmap: false,
   alerts: [],
   eventLog: [],
   map2d: { scale: 1, panX: 0, panY: 0, minScale: 0.4, maxScale: 5 },
@@ -125,33 +115,23 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
   },
 
   bootstrap: async () => {
-    const mock = isMockMode();
-    let planta: PlantaResponse;
-    let useMock = mock;
     const alerts: AlertaFront[] = [];
-
-    if (mock) {
-      planta = clonePlanta(PLANTA_MOCK);
-    } else {
-      try {
-        planta = await api.loadPlanta('alpha-1');
-        const loaded = await api.loadAlertas('alpha-1');
-        alerts.push(...loaded);
-        connectTelemetry((msg) => get().applyTelemetryPatch(msg));
-      } catch (err) {
-        console.error('Falha ao conectar API, usando mock:', err);
-        planta = clonePlanta(PLANTA_MOCK);
-        useMock = true;
-      }
+    try {
+      const planta = await api.loadPlanta('alpha-1');
+      const loaded = await api.loadAlertas('alpha-1');
+      alerts.push(...loaded);
+      connectTelemetry((msg) => get().applyTelemetryPatch(msg));
+      set({ planta, loadError: null, alerts, ready: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Não foi possível carregar a planta.';
+      console.error('Falha ao conectar API:', err);
+      set({ planta: null, loadError: msg, alerts: [], ready: true });
     }
+  },
 
-    set({ planta, useMock, alerts, ready: true });
-
-    if (useMock) {
-      get().addAlert('aviso', 'SMT 2 em manutenção preventiva — OP pausada', 'smt-2', null);
-      get().addAlert('info', 'QC: Yield estável em 99.4%', 'qc', null);
-      get().startSimulator();
-    }
+  retryBootstrap: async () => {
+    set({ ready: false, loadError: null });
+    await get().bootstrap();
   },
 
   applyTelemetryPatch: (msg) => {
@@ -230,13 +210,6 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
     }
   },
 
-  toggleMaterialFlow: () => set((s) => ({ showFlow: !s.showFlow })),
-
-  toggleHeatmap: () => {
-    set((s) => ({ showHeatmap: !s.showHeatmap }));
-    get().updateVisualsFromData();
-  },
-
   setTurno: (t) => {
     const { planta } = get();
     if (!planta) return;
@@ -277,7 +250,7 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
   },
 
   triggerAndon: async (tipo) => {
-    const { selectedId, selectedMachineId, planta, useMock } = get();
+    const { selectedId, selectedMachineId, planta } = get();
     if (!selectedId || !planta) return;
     const target = selectedMachineId || selectedId;
     const labels: Record<string, string> = {
@@ -286,18 +259,6 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
       material: 'Material',
       manutencao: 'Manutenção',
     };
-
-    if (useMock) {
-      if (selectedMachineId) {
-        const m = getMachine(planta, selectedId, selectedMachineId);
-        if (m) m.status = tipo === 'manutencao' ? 'manutencao' : 'alerta';
-      }
-      get().addAlert('aviso', `Andon ${labels[tipo]}: ${target}`, selectedId, selectedMachineId);
-      get().updateVisualsFromData();
-      await get().saveOccurrence(target, tipo, `Andon acionado: ${labels[tipo]}`);
-      set({ planta: { ...planta } });
-      return;
-    }
 
     try {
       await api.triggerAndon({
@@ -319,20 +280,14 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
   },
 
   saveOccurrence: async (asset, type, desc) => {
-    const { planta, useMock, eventLog } = get();
+    const { planta, eventLog } = get();
     if (!planta) return;
     const time = formatSimTime(planta);
 
-    if (useMock) {
-      const list = JSON.parse(localStorage.getItem('sgm_occurrences') || '[]') as OcorrenciaFront[];
-      list.unshift({ asset, type, desc, time, ts: Date.now() });
-      localStorage.setItem('sgm_occurrences', JSON.stringify(list.slice(0, 50)));
-    } else {
-      try {
-        await api.saveOcorrencia({ plantaId: 'alpha-1', asset, type, descricao: desc });
-      } catch (err) {
-        console.error('Ocorrência error:', err);
-      }
+    try {
+      await api.saveOcorrencia({ plantaId: 'alpha-1', asset, type, descricao: desc });
+    } catch (err) {
+      console.error('Ocorrência error:', err);
     }
 
     const newLog = [{ type: 'ocorrencia', text: `${asset}: ${type}`, time }, ...eventLog].slice(0, 50);
@@ -340,10 +295,6 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
   },
 
   loadOcorrenciasRecent: async () => {
-    const { useMock } = get();
-    if (useMock) {
-      return JSON.parse(localStorage.getItem('sgm_occurrences') || '[]') as OcorrenciaFront[];
-    }
     try {
       return await api.loadOcorrencias('alpha-1', 8);
     } catch {
@@ -487,23 +438,5 @@ export const usePlantaStore = create<PlantaStore>((set, get) => ({
     set({ simInterval: null, clockInterval: null });
   },
 }));
-
-export function oeeHeatColor(oee: number | null | undefined): string {
-  if (oee == null) return 'rgba(46,125,50,0.04)';
-  if (oee >= 90) return 'rgba(46,125,50,0.18)';
-  if (oee >= 75) return 'rgba(249,168,37,0.15)';
-  return 'rgba(211,47,47,0.12)';
-}
-
-export const FLOW_PATHS = [
-  'M 130 625 L 180 550',
-  'M 180 237 L 180 295',
-  'M 320 237 L 340 280',
-  'M 400 280 L 480 280',
-  'M 400 430 L 480 430',
-  'M 800 280 L 820 280',
-  'M 900 340 L 900 360',
-  'M 920 470 L 920 520',
-];
 
 export { STATUS_COLORS };
