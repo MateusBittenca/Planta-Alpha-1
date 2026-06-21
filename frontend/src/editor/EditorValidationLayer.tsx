@@ -46,8 +46,8 @@ export function EditorValidationLayer({
               stroke="transparent"
               strokeWidth={14}
               rx={4}
-              style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-              onClick={(e) => {
+              style={{ pointerEvents: 'none', cursor: 'pointer' }}
+              onPointerDown={(e) => {
                 e.stopPropagation();
                 onSelectSector(s.id);
               }}
@@ -76,8 +76,8 @@ export function EditorValidationLayer({
                 cy={pos.cy}
                 r={18}
                 fill="transparent"
-                style={{ pointerEvents: 'all', cursor: 'pointer' }}
-                onClick={(e) => {
+                style={{ pointerEvents: 'none', cursor: 'pointer' }}
+                onPointerDown={(e) => {
                   e.stopPropagation();
                   onSelectMachine(s.id, machineId);
                 }}

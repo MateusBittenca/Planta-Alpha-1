@@ -189,7 +189,17 @@ export function EditorCanvas() {
     setIsPanning(true);
   };
 
-  const onSvgMouseDown = (e: React.MouseEvent) => {
+  const onCanvasPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    const target = e.target as Element;
+    if (
+      target.closest('.zone-path') ||
+      target.closest('.machine-hit') ||
+      target.closest('.validation-layer') ||
+      target.closest('.resize-handle')
+    ) {
+      return;
+    }
+
     const svg = svgRef.current;
     if (!svg) return;
 
@@ -223,7 +233,6 @@ export function EditorCanvas() {
         panOrigin: { x: 0, y: 0 },
       };
       setDrawPreview({ x, y, w: 0, h: 0 });
-      return;
     }
   };
 
@@ -446,7 +455,7 @@ export function EditorCanvas() {
             className="plant-svg"
             viewBox={`${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`}
             preserveAspectRatio="xMidYMid meet"
-            onMouseDown={onSvgMouseDown}
+            onPointerDown={onCanvasPointerDown}
           >
             <defs>
               <pattern height="40" id="editor-grid" patternUnits="userSpaceOnUse" width="40">
@@ -484,6 +493,12 @@ export function EditorCanvas() {
                 </g>
               );
             })}
+            <EditorValidationLayer
+              draft={draft}
+              overlaps={overlaps}
+              onSelectSector={(sectorId) => select(sectorId, null)}
+              onSelectMachine={(sectorId, machineId) => select(sectorId, machineId)}
+            />
             <g className="machines-layer">
               {draft.setores.map((s) =>
                 s.maquinas.map((m, i) => {
@@ -531,12 +546,6 @@ export function EditorCanvas() {
                 })
               )}
             </g>
-            <EditorValidationLayer
-              draft={draft}
-              overlaps={overlaps}
-              onSelectSector={(sectorId) => select(sectorId, null)}
-              onSelectMachine={(sectorId, machineId) => select(sectorId, machineId)}
-            />
             {drawPreview && drawPreview.w > 0 && (
               <rect
                 x={drawPreview.x}
@@ -559,6 +568,7 @@ export function EditorCanvas() {
                 fill="#fff"
                 stroke="#b32200"
                 strokeWidth={2}
+                className="resize-handle"
                 style={{ cursor: h.cursor }}
                 onPointerDown={(e) => onHandleDown(e, h.id)}
               />
